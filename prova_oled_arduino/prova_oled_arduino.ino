@@ -3,10 +3,16 @@
 #include <SPI.h>
 #include <Wire.h>
 
+#include <ArduinoJson.h>
+#include <SoftwareSerial.h>
+
+SoftwareSerial mySerial(6, 7); // RX, TX
+
 U8G2_SH1107_PIMORONI_128X128_1_4W_HW_SPI u8g2(U8G2_R3, /* cs=*/2, /* dc=*/3, /* reset=*/4);
 
 void setup() {
-  Serial.begin(9600);
+  mySerial.begin(9600);
+  Serial.begin(57600);
   
   // Initialize SPI pins
   u8x8_t *u8x8 = u8g2.getU8x8();
@@ -21,7 +27,44 @@ void setup() {
 }
 
 void loop() {
-  testScrollingContent();
+  JsonDocument doc;
+
+
+  String dataShow = "old";
+
+  int x = 0;
+  int y = 0;
+
+  if (mySerial.available()){
+    String data = mySerial.readStringUntil('\n');
+    
+    DeserializationError error = deserializeJson(doc, data);  
+
+    if (error == DeserializationError::Ok && doc.size() > 0) {
+      JsonObject firstElement = doc[0];
+      if (firstElement.containsKey("center")) {
+        JsonArray centerArray = firstElement["center"];
+        if (centerArray.size() >= 2) {
+          x = centerArray[0];
+          y = centerArray[1];
+          dataShow = "X:" + String(x) + " Y:" + String(y);
+        }
+      }
+    }
+    Serial.println("Ricevuto: " + dataShow);
+  }
+  
+  u8g2.firstPage();
+  do {    
+    
+    u8g2.setFont(u8g2_font_6x10_tr);
+    u8g2.drawStr(5, 120, dataShow.c_str());
+
+    u8g2.drawBox(30 +(x/128), 30 +(y/128), 20, 20);
+    
+  } while (u8g2.nextPage());
+  
+  delay(500);
 }
 
 // Test function to check display alignment
@@ -59,38 +102,4 @@ void testDisplayAlignment() {
   } while (u8g2.nextPage());
   
   delay(3000);
-}
-
-// Scrolling test to see wrap-around behavior
-void testScrollingContent() {
-  static int offset = 0;
-  
-  u8g2.firstPage();
-  do {
-    // Moving content to test wrap-around
-    u8g2.drawFrame(0, 0, 128, 128);
-    
-    // Moving rectangle
-    int rectY = (offset / 2) % 140 - 10;  // Will go off-screen and wrap
-    u8g2.drawBox(30, rectY, 20, 10);
-    
-    // Moving text
-    int textY = (offset / 3) % 150;
-    if(textY < 10) textY = 10;  // Keep text visible
-    if(textY > 125) textY = 125;
-    
-    u8g2.setFont(u8g2_font_6x10_tr);
-    char posStr[20];
-    sprintf(posStr, "Y:%d", textY);
-    u8g2.drawStr(60, textY, posStr);
-    
-    // Static reference
-    u8g2.drawStr(5, 15, "REF");
-    u8g2.drawStr(5, 120, "BOT");
-    
-  } while (u8g2.nextPage());
-  
-  offset++;
-  if(offset > 400) offset = 0;
-  delay(50);
 }

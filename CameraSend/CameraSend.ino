@@ -2,7 +2,6 @@
 #include "CameraConf.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <ArduinoJson.h>
 
 const char* ssid = "AndroidOp";
 const char* password = "certosino";
@@ -11,6 +10,7 @@ const char* serverURL = "http://192.168.43.5:5000/upload";  // Replace with your
 
 
 void setup() {
+  Serial1.begin(9600, SERIAL_8N1, 1, 3);
   Serial.begin(115200);
 
   // definizione parametri configurazione camera  
@@ -58,17 +58,13 @@ void sendImageToPython() {
   // [<- ] === stato ===
   // controllo se la cominicazione è andata a buon fine
 
-  JsonDocument doc;
-
   if(httpResponseCode > 0) {
-    String response = http.getString();
-
-    
-    DeserializationError error = deserializeJson(doc, response);
-    
+    String response = http.getString();    
     
     Serial.println("HTTP Response: " + String(httpResponseCode));
-    Serial.println("Response: " + String(doc[0]));
+    Serial.println("HTTP Response: " + response);
+    Serial1.println(response);
+
   } else {
     Serial.println("Error sending POST request");
   }
@@ -79,5 +75,5 @@ void sendImageToPython() {
 
 void loop() {
   sendImageToPython();
-  delay(5000);  // Send image every 5 seconds
+  delay(500);
 }
