@@ -2,10 +2,11 @@
 #include "CameraConf.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <ArduinoJson.h>
 
 const char* ssid = "AndroidOp";
 const char* password = "certosino";
-const char* serverURL = "http://192.168.43.142:5000/upload";  // Replace with your PC's IP
+const char* serverURL = "http://192.168.43.5:5000/upload";  // Replace with your PC's IP
 
 
 
@@ -56,10 +57,18 @@ void sendImageToPython() {
   
   // [<- ] === stato ===
   // controllo se la cominicazione è andata a buon fine
+
+  JsonDocument doc;
+
   if(httpResponseCode > 0) {
     String response = http.getString();
+
+    
+    DeserializationError error = deserializeJson(doc, response);
+    
+    
     Serial.println("HTTP Response: " + String(httpResponseCode));
-    Serial.println("Response: " + response);
+    Serial.println("Response: " + String(doc[0]));
   } else {
     Serial.println("Error sending POST request");
   }
