@@ -1,4 +1,5 @@
 from flask import Flask, request
+import socket
 
 from ultralytics import YOLO
 import cv2
@@ -86,9 +87,11 @@ def status():
     return "Image receiver is running!", 200
 
 if __name__ == '__main__':
+    hostname = socket.gethostname()
+    IPAddr = socket.gethostbyname(hostname)
     
     print("Starting image receiver server...")
-    print("ESP32 should send images to: http://YOUR_PC_IP:5000/upload")
+    print(f"ESP32 should send images to: http://{IPAddr}:5000/upload")
 
     model = YOLO("yolo11s.pt")  # load an official model
 
