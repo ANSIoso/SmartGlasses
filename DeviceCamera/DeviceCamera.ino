@@ -77,5 +77,5 @@ void sendImageToPython() {
 
 void loop() {
   sendImageToPython();
-  delay(500);
+  delay(50);
 }
