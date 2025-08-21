@@ -89,6 +89,9 @@ def status():
 if __name__ == '__main__':
     model = YOLO("yolo11s.pt")  # load an official model
 
+    for name in model.model.names.values():
+        print(name)
+
     display_thread = DisplayDetect(30)
     display_thread.start()
 

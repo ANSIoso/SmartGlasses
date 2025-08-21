@@ -6,6 +6,9 @@
 #include <ArduinoJson.h>
 #include <SoftwareSerial.h>
 
+#include "MenuLogic.h"
+#include "MenuView.h"
+
 SoftwareSerial mySerial(6, 7); // RX, TX
 
 U8G2_SH1107_PIMORONI_128X128_1_4W_HW_SPI u8g2(U8G2_R1, /* cs=*/2, /* dc=*/3, /* reset=*/4);
@@ -22,6 +25,21 @@ U8G2_SH1107_PIMORONI_128X128_1_4W_HW_SPI u8g2(U8G2_R1, /* cs=*/2, /* dc=*/3, /* 
 # define SCREEN_HEIGHT 128
 # define SCREEN_WIDTH 128
 
+const int screenCenterX = SCREEN_WIDTH / 2;   // 64
+const int screenCenterY = SCREEN_HEIGHT / 2;  // 64
+const int radarRadius = 40;  // radius for arrow placement
+
+// buttons
+#define BUTTON_UP 9
+#define BUTTON_SELECT 5
+#define BUTTON_DOWN 8
+
+String data;
+JsonDocument doc;
+
+int menu_btn_clicked = 0;
+MenuLogic screenMenuL(MenuBitmaps::ICON_COUNT);
+
 void setup() {
   mySerial.begin(BR_COMUNICATION);
   Serial.begin(BR_DEBUG);
@@ -34,64 +52,98 @@ void setup() {
   Wire.begin();
   u8g2.begin();
   
-  Serial.println("Testing display alignment...");
-  testDisplayAlignment();
+  pinMode(BUTTON_UP, INPUT_PULLUP);
+  pinMode(BUTTON_SELECT, INPUT_PULLUP);
+  pinMode(BUTTON_DOWN, INPUT_PULLUP);
+  Serial.println("Start...");
 }
-
-
 
 void loop() {
-  visualizeObjects();
+  if((menu_btn_clicked == 0) && (digitalRead(BUTTON_SELECT) == LOW)){
+		screenMenuL.toggleMenu();
+		menu_btn_clicked = 1;
+	}
+
+	if((menu_btn_clicked == 1) && (digitalRead(BUTTON_SELECT) == HIGH)){
+		menu_btn_clicked = 0;
+	}
+	
+
+  if(digitalRead(BUTTON_UP) == LOW)
+    screenMenuL.nextItem();
+  if(digitalRead(BUTTON_DOWN) == LOW)
+    screenMenuL.previousItem();
+
+  getObjs();
   
-  delay(50);
+	if(screenMenuL.isMenuActive()){
+    int item_selected = screenMenuL.getSelectedItem();
+    int item_previous = screenMenuL.getPreviousItem();
+    int item_next = screenMenuL.getNextItem();
+
+    int objCount = 0;
+
+    for(int i = 0; i < doc.size(); i++) {
+      JsonObject obj = doc[i];
+
+      if(obj["class"] == MenuBitmaps::object_tipes[screenMenuL.getSelectedItem()])
+        objCount++;
+    }
+
+    DrawMenu(item_selected, item_previous, item_next, objCount);
+  }else
+    visualizeObjects();
 }
 
-void visualizeObjects(){
+void getObjs(){
   if (!mySerial.available())
     return;
-    
-  JsonDocument doc;
-  String data = mySerial.readStringUntil('\n');
+
+  data = mySerial.readStringUntil('\n');
   DeserializationError error = deserializeJson(doc, data);
-  if (error != DeserializationError::Ok || doc.size() <= 0)
+  if (error != DeserializationError::Ok)
     return;
-  
-  const int centerX = SCREEN_WIDTH / 2;   // 64
-  const int centerY = SCREEN_HEIGHT / 2;  // 64
-  const int radius = 40;  // Radius for arrow placement
-  
+}
+
+void visualizeObjects(){  
+  if (!mySerial.available())
+    return;
+
   u8g2.firstPage();
   do {    
 
-    u8g2.drawCircle(centerX, centerY, radius-2, U8G2_DRAW_ALL);
-    u8g2.drawCircle(centerX, centerY, radius-3, U8G2_DRAW_ALL);
-    u8g2.drawCircle(centerX, centerY, radius+2, U8G2_DRAW_ALL);
-    u8g2.drawCircle(centerX, centerY, radius+3, U8G2_DRAW_ALL);
+    u8g2.drawCircle(screenCenterX, screenCenterY, radarRadius-2, U8G2_DRAW_ALL);
+    u8g2.drawCircle(screenCenterX, screenCenterY, radarRadius-3, U8G2_DRAW_ALL);
+    u8g2.drawCircle(screenCenterX, screenCenterY, radarRadius+2, U8G2_DRAW_ALL);
+    u8g2.drawCircle(screenCenterX, screenCenterY, radarRadius+3, U8G2_DRAW_ALL);
    
     // Process each object
     for(int i = 0; i < doc.size(); i++) {
       JsonObject obj = doc[i];
+
+      if(obj["class"] != MenuBitmaps::object_tipes[screenMenuL.getSelectedItem()])
+        continue;
      
       // Get object center in image coordinates
       long objX = obj["center"][0];
       long objY = obj["center"][1];
       
       // Convert to screen coordinates relative to center
-      int relativeX = ((objX * SCREEN_WIDTH) / IMG_WIDTH) - centerX;
-      int relativeY = ((objY * SCREEN_HEIGHT) / IMG_HEIGHT) - centerY;
+      int relativeX = ((objX * SCREEN_WIDTH) / IMG_WIDTH) - screenCenterX;
+      int relativeY = ((objY * SCREEN_HEIGHT) / IMG_HEIGHT) - screenCenterY;
       
       // Calculate angle using atan2 (returns radians)
       float angle = atan2(relativeY, relativeX);
       
       // Calculate arrow position on circumference
-      int arrowX = centerX + (int)(cos(angle) * radius);
-      int arrowY = centerY + (int)(sin(angle) * radius);
+      int arrowX = screenCenterX + (int)(cos(angle) * radarRadius);
+      int arrowY = screenCenterY + (int)(sin(angle) * radarRadius);
       
       // Optional: Add distance indication with different arrow sizes
       float distance = sqrt(relativeX*relativeX + relativeY*relativeY);
 
       // Draw directional arrow
-      if(distance >= radius - 5)
+      if(distance >= radarRadius - 5)
         drawDirectionalArrow(arrowX, arrowY, angle, (SCREEN_HEIGHT - distance)/3);
       else{
         long x = (objX * SCREEN_WIDTH) / IMG_WIDTH;
@@ -134,39 +186,36 @@ void drawDirectionalArrow(int x, int y, float angle, int arrowSize) {
   u8g2.drawTriangle(tipX, tipY, baseX1, baseY1, baseX2, baseY2);
 }
 
-// Test function to check display alignment
-void testDisplayAlignment() {
+void DrawMenu(int item_selected, int item_previous, int item_next, int found_objects){
+  if (!mySerial.available())
+    return;
+
   u8g2.firstPage();
-  do {
-    // Draw reference grid
-    u8g2.drawFrame(0, 0, 128, 128);        // Outer border
-    u8g2.drawFrame(10, 10, 108, 108);      // Inner border
+  do {    
+    u8g2.setBitmapMode(1);  // imposto la modalità di disegno per "combinare" le bitmap
     
-    // Corner markers
-    u8g2.drawBox(0, 0, 5, 5);              // Top-left
-    u8g2.drawBox(123, 0, 5, 5);            // Top-right  
-    u8g2.drawBox(0, 123, 5, 5);            // Bottom-left
-    u8g2.drawBox(123, 123, 5, 5);          // Bottom-right
+    // === disegno gli elementi dell'interfaccia ===
+    // - dashboard (ospiterà le icone delle classi)
+    u8g2.drawXBMP(0, 29, 128, 56, MenuBitmaps::epd_bitmap_dashboard);
+
+    // - scrollbar (per mostrare posizione nella lista delle classi)
+          int scrollbarPos = 5 + ((128/MenuBitmaps::ICON_COUNT) * item_selected);
+    u8g2.drawXBMP(0, 6, 128, 8, MenuBitmaps::epd_bitmap_scrollbar);
+    u8g2.drawXBMP(scrollbarPos, 6, 24, 8, MenuBitmaps::epd_bitmap_scrollbar_handle);
+
+    // === "popolo" l'interfaccia
+    // - disegno la classe attualmente selezionata
+    // - disegno le classi prossime a quella attualmente selezionata
+    u8g2.drawXBMP(6, 42, 32, 32, MenuBitmaps::icon_bitmaps[item_previous]);
+    u8g2.drawXBMP(49, 42, 32, 32, MenuBitmaps::icon_bitmaps[item_selected]);
+    u8g2.drawXBMP(92, 42, 32, 32, MenuBitmaps::icon_bitmaps[item_next]);
+
+    // - scrivo il numero di istanze trovate per una determinata classe   
+    String objCount = "Found " + String(found_objects);
+    u8g2.setFont(u8g2_font_crox5hb_tf);
+    u8g2.drawStr(18, 110, objCount.c_str());
     
-    // Center cross
-    u8g2.drawHLine(58, 64, 12);            // Horizontal line
-    u8g2.drawVLine(64, 58, 12);            // Vertical line
-    
-    // Text positioning test
-    u8g2.setFont(u8g2_font_6x10_tr);
-    u8g2.drawStr(20, 20, "TOP");
-    u8g2.drawStr(45, 64, "CENTER");
-    u8g2.drawStr(20, 115, "BOTTOM");
-    
-    // Numbers to check wrap-around
-    u8g2.setFont(u8g2_font_4x6_tr);
-    for(int i = 0; i < 10; i++) {
-      char num[3];
-      sprintf(num, "%d", i);
-      u8g2.drawStr(20 + i * 10, 40, num);
-    }
-    
+    u8g2.setBitmapMode(0);
+
   } while (u8g2.nextPage());
-  
-  delay(3000);
 }
