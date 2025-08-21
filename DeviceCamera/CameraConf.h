@@ -15,7 +15,6 @@
 #define VSYNC_GPIO_NUM    6
 #define HREF_GPIO_NUM     7
 #define PCLK_GPIO_NUM     13
-
 camera_config_t createCameraConf(){
     // definizione parametri configurazione camera  
     camera_config_t config;
@@ -40,12 +39,18 @@ camera_config_t createCameraConf(){
     config.xclk_freq_hz = 20000000;
     config.pixel_format = PIXFORMAT_JPEG;
     config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
-    config.fb_location = CAMERA_FB_IN_PSRAM;
     
-    
-    config.frame_size = FRAMESIZE_VGA;
+    // settaggi qualità/velicità
     config.fb_count = 1;
-    config.jpeg_quality = 20;
 
+    if(psramFound()){
+      config.frame_size = FRAMESIZE_VGA;
+      config.jpeg_quality = 15;
+      config.fb_location = CAMERA_FB_IN_PSRAM;
+    }else{
+      config.frame_size = FRAMESIZE_QVGA;
+      config.jpeg_quality = 25;
+      config.fb_location = CAMERA_FB_IN_DRAM;
+    }
     return config;
 }
