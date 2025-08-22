@@ -25,6 +25,7 @@ void setup() {
     return;
   }
 
+  Serial1.println("s_connecting");
   // connessione al wifi
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
@@ -68,6 +69,7 @@ void sendImageToPython() {
     Serial1.println(response);
 
   } else {
+    Serial1.println("s_comunication_error");
     Serial.println("Error sending POST request");
   }
   
