@@ -25,11 +25,11 @@ void setup() {
     return;
   }
 
-  Serial1.println("connecting");
   // connessione al wifi
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
+    Serial1.println("connect");
     Serial.print(".");
   }
   Serial.println("");
