@@ -31,7 +31,9 @@ U8G2_SH1107_PIMORONI_128X128_1_4W_HW_SPI u8g2(U8G2_R1, /* cs=*/2, /* dc=*/3, /* 
 // ====== NAVIGATION ======
 // logic
 MenuLogic screenMenuL(MenuBitmaps::ICON_COUNT);
+int up_btn_clicked = 0;
 int menu_btn_clicked = 0;
+int down_btn_clicked = 0;
 // buttons pins
 #define BUTTON_UP 9
 #define BUTTON_SELECT 5
@@ -64,22 +66,39 @@ void loop() {
 		screenMenuL.toggleMenu();
 		menu_btn_clicked = 1;
 	}
-
 	if((menu_btn_clicked == 1) && (digitalRead(BUTTON_SELECT) == HIGH)){
 		menu_btn_clicked = 0;
 	}
 	
 
-  if(digitalRead(BUTTON_UP) == LOW)
+  if((up_btn_clicked == 0) && (digitalRead(BUTTON_UP) == LOW)){
     screenMenuL.nextItem();
-  if(digitalRead(BUTTON_DOWN) == LOW)
+    up_btn_clicked = 1;
+  }
+  if((up_btn_clicked == 1) && (digitalRead(BUTTON_UP) == HIGH)){
+		up_btn_clicked = 0;
+	}
+
+
+  if((down_btn_clicked == 0) && (digitalRead(BUTTON_DOWN) == LOW)){
     screenMenuL.previousItem();
+    down_btn_clicked = 1;
+  }
+  if((down_btn_clicked == 1) && (digitalRead(BUTTON_DOWN) == HIGH)){
+		down_btn_clicked = 0;
+	}
 
   // ---- handle comunication with esp ----  
-  if(!getObjs())
+  String status = getObjs();
+  // Serial.println("status: " + status);
+  if(status == "s_empty"){
     return;
+  }
+  if(status != "s_ok"){
+    DrawStatus(status);
+    return;
+  }
 
-  
   // ---- handle screen visualizzation ----
 	if(screenMenuL.isMenuActive())
     DrawMenu();
@@ -88,25 +107,29 @@ void loop() {
 }
 
 // ======== OBJ UTILS ========
-bool getObjs(){
+String getObjs(){
   // check if there are data available to receive from esp
   if (!mySerial.available())
-    return false;
+    return "s_empty";
 
   // if available get the data
   data = mySerial.readStringUntil('\n');
+  data.trim();
 
   // if data are not useful return error
   if (data == "")
-    return false;
+    return "s_empty";
+
+  if (data == "s_connecting" || data == "s_comunication_error")
+    return data;
 
   // convert the data string in a json file to access to single elements
   DeserializationError error = deserializeJson(doc, data);
   if (error != DeserializationError::Ok)
-  return false;
+    return "s_empty";
 
   // if all went good return success
-  return true;
+  return "s_ok";
 }
 
 int CountClassObjects(char className[]){
@@ -247,4 +270,19 @@ void DrawMenu(){
     u8g2.setBitmapMode(0); // set drawing mode to normal
 
   } while (u8g2.nextPage());
+}
+
+int s = 0;
+void DrawStatus(String msg){
+  u8g2.firstPage();
+  do {        
+    u8g2.drawXBMP(52, 45, 24, 24, MenuBitmaps::load_bitmaps[s]);
+
+    u8g2.setFont(u8g2_font_crox5hb_tf);
+    u8g2.drawStr(18, 110, msg.c_str());
+  } while (u8g2.nextPage());
+
+  s++;
+  if(s >= 2)
+    s = 0;
 }
