@@ -90,7 +90,6 @@ void loop() {
 
   // ---- handle comunication with esp ----  
   String status = getObjs();
-  // Serial.println("status: " + status);
   if(status == "s_empty"){
     return;
   }
@@ -120,7 +119,8 @@ String getObjs(){
   if (data == "")
     return "s_empty";
 
-  if (data == "s_connecting" || data == "s_comunication_error")
+
+  if (data == "connect" || data == "com_err")
     return data;
 
   // convert the data string in a json file to access to single elements
@@ -279,7 +279,7 @@ void DrawStatus(String msg){
     u8g2.drawXBMP(52, 45, 24, 24, MenuBitmaps::load_bitmaps[s]);
 
     u8g2.setFont(u8g2_font_crox5hb_tf);
-    u8g2.drawStr(18, 110, msg.c_str());
+    u8g2.drawStr(16, 110, msg.c_str());
   } while (u8g2.nextPage());
 
   s++;
