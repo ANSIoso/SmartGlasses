@@ -67,11 +67,13 @@ def upload_image():
         if img is None:
             return "Failed to decode image", 400        
 
+        print("richiesta")
         # predico gli oggetti nell'immagine
         objects = detect(model, img)
 
-        print(img.shape)
-        print(objects)
+        print("elaborata")
+        # print(img.shape)
+        # print(objects)
 
         # visualizzo le predizioni per debug
         display_thread.add_frame(img, objects)

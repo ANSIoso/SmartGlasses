@@ -44,11 +44,11 @@ camera_config_t createCameraConf(){
     config.fb_count = 1;
 
     if(psramFound()){
-      //config.frame_size = FRAMESIZE_VGA;
-      //config.jpeg_quality = 15;
+      config.frame_size = FRAMESIZE_VGA;
+      config.jpeg_quality = 15;
 
-      config.frame_size = FRAMESIZE_240X240;
-      config.jpeg_quality = 20;
+      //config.frame_size = FRAMESIZE_240X240;
+      //config.jpeg_quality = 20;
 
 
       config.fb_location = CAMERA_FB_IN_PSRAM;

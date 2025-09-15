@@ -56,7 +56,6 @@ void setup() {
   pinMode(BUTTON_UP, INPUT_PULLUP);
   pinMode(BUTTON_SELECT, INPUT_PULLUP);
   pinMode(BUTTON_DOWN, INPUT_PULLUP);
-  Serial.println("Start...");
 }
 
 void loop() {
@@ -90,6 +89,7 @@ void loop() {
 
   // ---- handle comunication with esp ----  
   String status = getObjs();
+  Serial.println(status);
   if(status == "s_empty"){
     return;
   }

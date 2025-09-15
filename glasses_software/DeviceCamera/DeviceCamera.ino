@@ -11,6 +11,8 @@ const char* serverURL = "http://192.168.43.5:5000/upload";  // Replace with your
 # define BR_COMUNICATION 9600 // to talk with ArduinoNano 
 # define BR_DEBUG 115200      // to check device outputs
 
+camera_fb_t * fb = NULL;
+
 void setup() {
   Serial1.begin(BR_COMUNICATION, SERIAL_8N1, 1, 3);
   Serial.begin(BR_DEBUG);
@@ -31,6 +33,7 @@ void setup() {
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
+    Serial1.println("connect");
   }
   Serial.println("");
 
@@ -40,15 +43,20 @@ void setup() {
   Serial.println(WiFi.localIP());
 }
 
-void sendImageToPython() {
-  // [ ->] === stato ===
+void captureImage() {
   // catturo frame dalla camera
-  camera_fb_t * fb = esp_camera_fb_get();
+  fb = esp_camera_fb_get();
   if(!fb) {
     Serial.println("Camera capture failed");
     return;
   }
-  
+}
+void captureClean() {
+  esp_camera_fb_return(fb);
+}
+
+void sendImageToPython() {
+  // [ ->] === stato ===  
   // preparo il "paccetto" con il frame per l'invio
   HTTPClient http;
   http.begin(serverURL);
@@ -74,12 +82,10 @@ void sendImageToPython() {
   }
   
   http.end();
-  esp_camera_fb_return(fb);
 }
 
 void loop() {
-  Serial.println("loop");
-
+  captureImage();
   sendImageToPython();
-  delay(50);
+  captureClean();
 }
