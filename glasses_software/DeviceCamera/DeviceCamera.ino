@@ -33,7 +33,6 @@ void setup() {
     delay(500);
     Serial1.println("connect");
     Serial.print(".");
-    Serial1.println("connect");
   }
   Serial.println("");
 
