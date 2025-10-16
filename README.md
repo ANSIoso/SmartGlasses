@@ -1,9 +1,7 @@
 # SmartGlasses
 <p align="center"  style="display: flex; gap: 50px; justify-content: center;">
 <img src="./consegna/images/1_car example.jpeg" height="400px" style="border-radius: 8px;" />
-<video height="400px" controls style="border-radius: 8px;">
-  <source src="./consegna/images/2_car example video.mp4" type="video/mp4">
-</video>
+<img src="./consegna/images/2_carexamplevideo-ezgif.com-optimize.gif" height="400px" style="border-radius: 8px;" />
 </p>
 
 <p align="center">
