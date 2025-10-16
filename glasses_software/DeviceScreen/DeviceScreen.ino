@@ -20,7 +20,7 @@ JsonDocument doc;
 # define BR_DEBUG 57600       // to check device outputs
 
 // ====== VISUALIZATION ======
-U8G2_SH1107_PIMORONI_128X128_1_4W_HW_SPI u8g2(U8G2_R1, /* cs=*/2, /* dc=*/3, /* reset=*/4);
+U8G2_SH1107_PIMORONI_128X128_1_4W_HW_SPI u8g2(U8G2_R3, /* cs=*/A2, /* dc=*/A3, /* reset=*/A4);
 // image settings
 # define IMG_HEIGHT 480
 # define IMG_WIDTH 640
@@ -89,7 +89,7 @@ void loop() {
 
   // ---- handle comunication with esp ----  
   String status = getObjs();
-  Serial.println(status);
+  //Serial.println(status);
   if(status == "s_empty"){
     return;
   }
