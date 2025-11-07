@@ -1,4 +1,5 @@
 # SmartGlasses
+Simple prototype of AR glasses inspired to Dragon Ball scouter and powered by Esp32 - cam and YOLO11
 <p align="center"  style="display: flex; gap: 50px; justify-content: center;">
 <img src="./consegna/images/1_car example.jpeg" height="400px" style="border-radius: 8px;" />
 <img src="./consegna/images/2_carexamplevideo-ezgif.com-optimize.gif" height="400px" style="border-radius: 8px;" />
